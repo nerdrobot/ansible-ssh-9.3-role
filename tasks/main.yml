@@ -1,0 +1,45 @@
+---
+- name: Install dependencies
+  ansible.builtin.apt:
+    pkg:
+      - build-essential
+      - zlib1g-dev
+      - libssl-dev
+      - libpam0g-dev
+      - libselinux1-dev
+    update_cache: yes
+
+- name: Create the sshd directory
+  ansible.builtin.file:
+    path: /var/lib/sshd
+    state: directory
+    mode: '0700'
+    group: "sys"
+
+- name: Download the openssh-9.3p1 package
+  get_url:
+    url="https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-9.3p1.tar.gz"
+    dest="/home/ubuntu"
+  register: new_archive
+
+
+- name: Unarchive openssh-9.3p1 package
+  unarchive:
+    src="/home/ubuntu/openssh-9.3p1.tar.gz"
+    dest="/home/ubuntu/"
+    copy=no
+
+- name: Compile ssh from sources (1)
+  ansible.builtin.shell: ./configure --with-md5-passwords --with-pam --with-selinux --with-privsep-path=/var/lib/sshd/ --sysconfdir=/etc/ssh
+  args:
+    chdir: /home/ubuntu/openssh-9.3p1/
+
+- name: Compile ssh from sources (2)
+  ansible.builtin.shell: make
+  args:
+    chdir: /home/ubuntu/openssh-9.3p1/
+
+- name: Install SSH from Sources
+  ansible.builtin.shell: make install
+  args:
+    chdir: /home/ubuntu/openssh-9.3p1/
